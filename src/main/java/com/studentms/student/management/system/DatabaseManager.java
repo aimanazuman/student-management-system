@@ -342,4 +342,114 @@ public class DatabaseManager {
         pstmt.setInt(1, studentId);
         return pstmt.executeQuery();
     }
+    
+    /**
+     * Updates a course in the database
+     */
+    public static boolean updateCourse(int courseId, String courseCode, String courseName,
+                                      int credits, String description) {
+        String sql = """
+            UPDATE courses 
+            SET course_code = ?, course_name = ?, credits = ?, description = ?
+            WHERE course_id = ?
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, courseCode);
+            pstmt.setString(2, courseName);
+            pstmt.setInt(3, credits);
+            pstmt.setString(4, description);
+            pstmt.setInt(5, courseId);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error updating course: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Deletes a course from the database
+     */
+    public static boolean deleteCourse(int courseId) {
+        String sql = "DELETE FROM courses WHERE course_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, courseId);
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error deleting course: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Deletes an enrollment record
+     */
+    public static boolean deleteEnrollment(int enrollmentId) {
+        String sql = "DELETE FROM enrollments WHERE enrollment_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, enrollmentId);
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error deleting enrollment: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Gets a course by its ID
+     */
+    public static ResultSet getCourseById(int courseId) throws SQLException {
+        Connection conn = getConnection();
+        String sql = "SELECT * FROM courses WHERE course_id = ?";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setInt(1, courseId);
+        return pstmt.executeQuery();
+    }
+    
+    /**
+     * Checks if a student is already enrolled in a course for a specific semester
+     */
+    public static boolean isStudentEnrolled(int studentId, int courseId, String semester, int year) {
+        String sql = """
+            SELECT COUNT(*) as count FROM enrollments 
+            WHERE student_id = ? AND course_id = ? AND semester = ? AND enrollment_year = ?
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, courseId);
+            pstmt.setString(3, semester);
+            pstmt.setInt(4, year);
+            
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("count") > 0;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error checking enrollment: " + e.getMessage());
+        }
+        
+        return false;
+    }
 }

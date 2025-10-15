@@ -4,31 +4,29 @@
  */
 package com.studentms.student.management.system;
 
-//import java.net.URL;
-//import java.util.ResourceBundle;
-//import javafx.fxml.Initializable;
-
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.stage.Stage;
+import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 
 /**
- * Controller class for the Student Management interface
- * Handles all user interactions and connects the UI with the database
+ * Controller class for the Student Management interface.
+ * Handles all user interactions and connects the UI with the database.
  */
 public class StudentViewController {
-    
+
     // ==================== FXML INJECTED UI COMPONENTS ====================
-    // These are automatically linked to components in the FXML file
-    // The fx:id in FXML must match the variable name here
-    
-    // Table and columns
+
     @FXML private TableView<Student> studentTable;
     @FXML private TableColumn<Student, Integer> idColumn;
     @FXML private TableColumn<Student, String> nameColumn;
@@ -39,8 +37,7 @@ public class StudentViewController {
     @FXML private TableColumn<Student, String> addressColumn;
     @FXML private TableColumn<Student, String> enrollDateColumn;
     @FXML private TableColumn<Student, String> statusColumn;
-    
-    // Input fields
+
     @FXML private TextField fullNameField;
     @FXML private TextField emailField;
     @FXML private TextField phoneField;
@@ -49,40 +46,26 @@ public class StudentViewController {
     @FXML private TextArea addressArea;
     @FXML private CheckBox activeCheckBox;
     @FXML private TextField searchField;
-    
-    // Radio buttons for gender
+
     @FXML private RadioButton maleRadio;
     @FXML private RadioButton femaleRadio;
     @FXML private RadioButton otherRadio;
     @FXML private ToggleGroup genderGroup;
-    
-    // Buttons
+
     @FXML private Button addButton;
     @FXML private Button updateButton;
     @FXML private Button deleteButton;
     @FXML private Button clearButton;
-    
-    // Status label
+
     @FXML private Label statusLabel;
-    
-    // ObservableList holds all student data for the table
-    // Observable means JavaFX automatically updates the UI when this list changes
+
     private ObservableList<Student> studentList = FXCollections.observableArrayList();
-    
-    // Date formatter for consistent date display
     private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    
-    // User session for role-based access control
     private LoginViewController.UserSession userSession;
-    
-    /**
-     * Initialize method is automatically called after FXML loading
-     * This is where we set up the table columns and load initial data
-     */
+
+    // ==================== INITIALIZATION ====================
     @FXML
     public void initialize() {
-        // Configure each table column to display the corresponding Student property
-        // PropertyValueFactory links table columns to Student object properties
         idColumn.setCellValueFactory(new PropertyValueFactory<>("studentId"));
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("fullName"));
         emailColumn.setCellValueFactory(new PropertyValueFactory<>("email"));
@@ -92,11 +75,9 @@ public class StudentViewController {
         addressColumn.setCellValueFactory(new PropertyValueFactory<>("address"));
         enrollDateColumn.setCellValueFactory(new PropertyValueFactory<>("enrollmentDate"));
         statusColumn.setCellValueFactory(new PropertyValueFactory<>("status"));
-        
-        // Set the observable list as the table's data source
+
         studentTable.setItems(studentList);
-        
-        // Add listener to table selection - when user clicks a row, populate the form
+
         studentTable.getSelectionModel().selectedItemProperty().addListener(
             (observable, oldValue, newValue) -> {
                 if (newValue != null) {
@@ -104,40 +85,27 @@ public class StudentViewController {
                 }
             }
         );
-        
-        // Set today's date as default for enrollment date
+
         enrollmentDatePicker.setValue(LocalDate.now());
-        
-        // Load all students from database
         loadStudentData();
-        
         updateStatusLabel("Ready - " + studentList.size() + " students loaded");
     }
-    
-    /**
-     * Sets the user session and applies role-based permissions
-     */
+
+    // ==================== USER SESSION & PERMISSIONS ====================
     public void setUserSession(LoginViewController.UserSession session) {
         this.userSession = session;
         applyRoleBasedPermissions();
         updateStatusLabel("Logged in as: " + session.getUsername() + " (" + session.getRole() + ")");
     }
-    
-    /**
-     * Applies permissions based on user role
-     */
+
     private void applyRoleBasedPermissions() {
-        if (userSession == null) {
-            return; // No restrictions if no user session
-        }
-        
+        if (userSession == null) return;
+
         if (userSession.isStudent()) {
-            // Students have read-only access
             addButton.setDisable(true);
             updateButton.setDisable(true);
             deleteButton.setDisable(true);
-            
-            // Disable form fields
+
             fullNameField.setEditable(false);
             emailField.setEditable(false);
             phoneField.setEditable(false);
@@ -148,30 +116,24 @@ public class StudentViewController {
             femaleRadio.setDisable(true);
             otherRadio.setDisable(true);
             activeCheckBox.setDisable(true);
-            
+
             updateStatusLabel("Student view: Read-only access");
-            
+
         } else if (userSession.isLecturer()) {
-            // Lecturers can view and update, but not add or delete
             addButton.setDisable(true);
             deleteButton.setDisable(true);
             updateStatusLabel("Lecturer view: Can update student information");
-            
+
         } else if (userSession.isAdmin()) {
-            // Administrators have full access
             updateStatusLabel("Administrator view: Full access");
         }
     }
-    
-    /**
-     * Loads all student records from the database into the table
-     */
+
+    // ==================== DATA HANDLING ====================
     private void loadStudentData() {
-        studentList.clear(); // Clear existing data
-        
+        studentList.clear();
         try (ResultSet rs = DatabaseManager.getAllStudents()) {
             while (rs.next()) {
-                // Create a Student object from each database row
                 Student student = new Student(
                     rs.getInt("student_id"),
                     rs.getString("full_name"),
@@ -189,81 +151,55 @@ public class StudentViewController {
             showError("Database Error", "Failed to load student data: " + e.getMessage());
         }
     }
-    
-    /**
-     * Populates the form fields with data from a selected student
-     */
+
     private void populateFormWithStudent(Student student) {
         fullNameField.setText(student.getFullName());
         emailField.setText(student.getEmail());
         phoneField.setText(student.getPhone());
         addressArea.setText(student.getAddress());
-        
-        // Parse and set date of birth
-        if (student.getDateOfBirth() != null && !student.getDateOfBirth().isEmpty()) {
-            try {
-                dateOfBirthPicker.setValue(LocalDate.parse(student.getDateOfBirth(), dateFormatter));
-            } catch (Exception e) {
-                dateOfBirthPicker.setValue(null);
-            }
+
+        try {
+            dateOfBirthPicker.setValue(LocalDate.parse(student.getDateOfBirth(), dateFormatter));
+        } catch (Exception e) {
+            dateOfBirthPicker.setValue(null);
         }
-        
-        // Parse and set enrollment date
-        if (student.getEnrollmentDate() != null && !student.getEnrollmentDate().isEmpty()) {
-            try {
-                enrollmentDatePicker.setValue(LocalDate.parse(student.getEnrollmentDate(), dateFormatter));
-            } catch (Exception e) {
-                enrollmentDatePicker.setValue(null);
-            }
+
+        try {
+            enrollmentDatePicker.setValue(LocalDate.parse(student.getEnrollmentDate(), dateFormatter));
+        } catch (Exception e) {
+            enrollmentDatePicker.setValue(LocalDate.now());
         }
-        
-        // Set gender radio button
+
         String gender = student.getGender();
-        if ("Male".equalsIgnoreCase(gender)) {
-            maleRadio.setSelected(true);
-        } else if ("Female".equalsIgnoreCase(gender)) {
-            femaleRadio.setSelected(true);
-        } else {
-            otherRadio.setSelected(true);
-        }
-        
-        // Set status checkbox
+        if ("Male".equalsIgnoreCase(gender)) maleRadio.setSelected(true);
+        else if ("Female".equalsIgnoreCase(gender)) femaleRadio.setSelected(true);
+        else otherRadio.setSelected(true);
+
         activeCheckBox.setSelected("Active".equalsIgnoreCase(student.getStatus()));
     }
-    
-    /**
-     * Handles the Add Student button click
-     */
+
+    // ==================== BUTTON HANDLERS ====================
+
     @FXML
     private void handleAddStudent() {
-        // Validate input fields
-        if (!validateInput()) {
-            return;
-        }
-        
-        // Get values from form fields
+        if (!validateInput()) return;
+
         String fullName = fullNameField.getText().trim();
         String email = emailField.getText().trim();
         String phone = phoneField.getText().trim();
-        String dateOfBirth = dateOfBirthPicker.getValue() != null ? 
-                            dateOfBirthPicker.getValue().format(dateFormatter) : "";
+        String dateOfBirth = dateOfBirthPicker.getValue() != null ? dateOfBirthPicker.getValue().format(dateFormatter) : "";
         String gender = getSelectedGender();
         String address = addressArea.getText().trim();
-        String enrollmentDate = enrollmentDatePicker.getValue() != null ? 
-                               enrollmentDatePicker.getValue().format(dateFormatter) : 
-                               LocalDate.now().format(dateFormatter);
-        
-        // Insert into database
-        int newId = DatabaseManager.createStudent(fullName, email, phone, dateOfBirth, 
-                                                  gender, address, enrollmentDate);
-        
+        String enrollmentDate = enrollmentDatePicker.getValue() != null ?
+                enrollmentDatePicker.getValue().format(dateFormatter) : LocalDate.now().format(dateFormatter);
+
+        int newId = DatabaseManager.createStudent(fullName, email, phone, dateOfBirth, gender, address, enrollmentDate);
+
         if (newId > 0) {
-            // Success - create new Student object and add to table
             String status = activeCheckBox.isSelected() ? "Active" : "Inactive";
-            Student newStudent = new Student(newId, fullName, email, phone, dateOfBirth, 
-                                           gender, address, enrollmentDate, status);
+            Student newStudent = new Student(newId, fullName, email, phone, dateOfBirth, gender, address, enrollmentDate, status);
             studentList.add(newStudent);
-            
+
             showSuccess("Success", "Student added successfully!");
             handleClearForm();
             updateStatusLabel("Student added - Total: " + studentList.size());
@@ -271,42 +207,27 @@ public class StudentViewController {
             showError("Error", "Failed to add student. Email may already exist.");
         }
     }
-    
-    /**
-     * Handles the Update Student button click
-     */
+
     @FXML
     private void handleUpdateStudent() {
-        // Get selected student from table
         Student selectedStudent = studentTable.getSelectionModel().getSelectedItem();
-        
         if (selectedStudent == null) {
             showWarning("No Selection", "Please select a student to update.");
             return;
         }
-        
-        if (!validateInput()) {
-            return;
-        }
-        
-        // Get updated values from form
+        if (!validateInput()) return;
+
         String fullName = fullNameField.getText().trim();
         String email = emailField.getText().trim();
         String phone = phoneField.getText().trim();
-        String dateOfBirth = dateOfBirthPicker.getValue() != null ? 
-                            dateOfBirthPicker.getValue().format(dateFormatter) : "";
+        String dateOfBirth = dateOfBirthPicker.getValue() != null ? dateOfBirthPicker.getValue().format(dateFormatter) : "";
         String gender = getSelectedGender();
         String address = addressArea.getText().trim();
         String status = activeCheckBox.isSelected() ? "Active" : "Inactive";
-        
-        // Update in database
-        boolean success = DatabaseManager.updateStudent(
-            selectedStudent.getStudentId(), fullName, email, phone, 
-            dateOfBirth, gender, address, status
-        );
-        
+
+        boolean success = DatabaseManager.updateStudent(selectedStudent.getStudentId(), fullName, email, phone, dateOfBirth, gender, address, status);
+
         if (success) {
-            // Update the Student object in the list
             selectedStudent.setFullName(fullName);
             selectedStudent.setEmail(email);
             selectedStudent.setPhone(phone);
@@ -314,41 +235,31 @@ public class StudentViewController {
             selectedStudent.setGender(gender);
             selectedStudent.setAddress(address);
             selectedStudent.setStatus(status);
-            
-            // Refresh table to show updated data
             studentTable.refresh();
-            
+
             showSuccess("Success", "Student updated successfully!");
             updateStatusLabel("Student updated");
         } else {
             showError("Error", "Failed to update student.");
         }
     }
-    
-    /**
-     * Handles the Delete Student button click
-     */
+
     @FXML
     private void handleDeleteStudent() {
         Student selectedStudent = studentTable.getSelectionModel().getSelectedItem();
-        
         if (selectedStudent == null) {
             showWarning("No Selection", "Please select a student to delete.");
             return;
         }
-        
-        // Confirm deletion with user
+
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmAlert.setTitle("Confirm Deletion");
         confirmAlert.setHeaderText("Delete Student");
-        confirmAlert.setContentText("Are you sure you want to delete " + 
-                                   selectedStudent.getFullName() + "?");
-        
+        confirmAlert.setContentText("Are you sure you want to delete " + selectedStudent.getFullName() + "?");
+
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                // Delete from database
                 boolean success = DatabaseManager.deleteStudent(selectedStudent.getStudentId());
-                
                 if (success) {
                     studentList.remove(selectedStudent);
                     showSuccess("Success", "Student deleted successfully!");
@@ -360,15 +271,11 @@ public class StudentViewController {
             }
         });
     }
-    
-    /**
-     * Handles the Clear Form button click
-     */
+
     @FXML
     private void handleClearForm() {
         fullNameField.clear();
         emailField.clear();
-        phoneField.clear();
         phoneField.clear();
         addressArea.clear();
         dateOfBirthPicker.setValue(null);
@@ -378,21 +285,16 @@ public class StudentViewController {
         studentTable.getSelectionModel().clearSelection();
         updateStatusLabel("Form cleared");
     }
-    
-    /**
-     * Handles the Search functionality
-     */
+
     @FXML
     private void handleSearch() {
         String searchTerm = searchField.getText().trim();
-        
         if (searchTerm.isEmpty()) {
-            loadStudentData(); // Show all students if search is empty
+            loadStudentData();
             return;
         }
-        
+
         studentList.clear();
-        
         try (ResultSet rs = DatabaseManager.searchStudentsByName(searchTerm)) {
             while (rs.next()) {
                 Student student = new Student(
@@ -413,10 +315,7 @@ public class StudentViewController {
             showError("Search Error", "Failed to search: " + e.getMessage());
         }
     }
-    
-    /**
-     * Handles the Refresh button click
-     */
+
     @FXML
     private void handleRefresh() {
         searchField.clear();
@@ -424,144 +323,140 @@ public class StudentViewController {
         handleClearForm();
         updateStatusLabel("Data refreshed - " + studentList.size() + " students loaded");
     }
-    
-    /**
-     * Handles Generate Full Report button click
-     */
+
     @FXML
     private void handleGenerateReport() {
-        String filename = "Student_Report_" + 
-                         LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".txt";
-        
+        String filename = "Student_Report_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".txt";
         boolean success = ReportGenerator.generateStudentReport(filename);
-        
+
         if (success) {
-            showSuccess("Report Generated", 
-                       "Full report has been generated successfully!\n\nFile: " + filename);
+            showSuccess("Report Generated", "Report generated successfully!\nFile: " + filename);
             updateStatusLabel("Report generated: " + filename);
         } else {
-            showError("Report Error", "Failed to generate report. Check console for details.");
+            showError("Report Error", "Failed to generate report.");
         }
     }
-    
-    /**
-     * Handles Export to CSV button click
-     */
+
     @FXML
     private void handleExportCSV() {
-        String filename = "Student_Export_" + 
-                         LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".csv";
-        
+        String filename = "Student_Export_" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".csv";
         boolean success = ReportGenerator.exportToCSV(filename);
-        
+
         if (success) {
-            showSuccess("Export Successful", 
-                       "Student data has been exported to CSV!\n\nFile: " + filename);
+            showSuccess("Export Successful", "Exported to CSV!\nFile: " + filename);
             updateStatusLabel("Data exported: " + filename);
         } else {
-            showError("Export Error", "Failed to export data. Check console for details.");
+            showError("Export Error", "Failed to export data.");
         }
     }
-    
-    /**
-     * Handles Show Statistics button click
-     */
+
     @FXML
     private void handleShowStatistics() {
-        // Create a dialog to show statistics
         Alert statsDialog = new Alert(Alert.AlertType.INFORMATION);
         statsDialog.setTitle("Student Statistics");
         statsDialog.setHeaderText("Statistical Summary");
-        
-        // Generate statistics reports
+
         String genderStats = ReportGenerator.generateGenderStatistics();
         String statusStats = ReportGenerator.generateStatusStatistics();
-        
-        // Combine both reports
         String fullStats = genderStats + "\n\n" + statusStats;
-        
-        // Create a TextArea to display statistics
+
         TextArea textArea = new TextArea(fullStats);
         textArea.setEditable(false);
         textArea.setWrapText(true);
         textArea.setMaxWidth(Double.MAX_VALUE);
         textArea.setMaxHeight(Double.MAX_VALUE);
         textArea.setStyle("-fx-font-family: 'Courier New'; -fx-font-size: 12px;");
-        
+
         statsDialog.getDialogPane().setContent(textArea);
         statsDialog.getDialogPane().setPrefWidth(600);
         statsDialog.getDialogPane().setPrefHeight(400);
-        
         statsDialog.showAndWait();
         updateStatusLabel("Statistics displayed");
     }
-    
-    /**
-     * Validates all required input fields
-     */
+
+    @FXML
+    private void handleManageEnrollments() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/studentms/student/management/system/EnrollmentView.fxml"));
+            Parent root = loader.load();
+            Scene scene = new Scene(root, 1200, 700);
+            Stage stage = (Stage) studentTable.getScene().getWindow();
+            stage.setScene(scene);
+            stage.setTitle("Student Enrollment & Results Management");
+        } catch (IOException e) {
+            showError("Navigation Error", "Failed to load enrollment view: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    @FXML
+    private void handleManageCourses() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/studentms/student/management/system/CourseView.fxml"));
+            Parent root = loader.load();
+            Scene scene = new Scene(root, 1200, 700);
+            Stage stage = (Stage) studentTable.getScene().getWindow();
+            stage.setScene(scene);
+            stage.setTitle("Course Management");
+        } catch (IOException e) {
+            showError("Navigation Error", "Failed to load course view: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // ==================== VALIDATION & UTILITIES ====================
+
     private boolean validateInput() {
         if (fullNameField.getText().trim().isEmpty()) {
             showWarning("Validation Error", "Please enter student's full name.");
             return false;
         }
-        
+
         if (emailField.getText().trim().isEmpty()) {
             showWarning("Validation Error", "Please enter student's email.");
             return false;
         }
-        
-        // Basic email format validation
+
         String email = emailField.getText().trim();
         if (!email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")) {
             showWarning("Validation Error", "Please enter a valid email address.");
             return false;
         }
-        
+
         if (genderGroup.getSelectedToggle() == null) {
             showWarning("Validation Error", "Please select a gender.");
             return false;
         }
-        
+
         return true;
     }
-    
-    /**
-     * Gets the selected gender from radio buttons
-     */
+
     private String getSelectedGender() {
         if (maleRadio.isSelected()) return "Male";
         if (femaleRadio.isSelected()) return "Female";
         if (otherRadio.isSelected()) return "Other";
         return "";
     }
-    
-    /**
-     * Updates the status label at the bottom of the window
-     */
+
     private void updateStatusLabel(String message) {
         statusLabel.setText(message);
     }
-    
-    // ==================== UTILITY METHODS FOR ALERTS ====================
-    
+
+    // ==================== ALERT HELPERS ====================
     private void showSuccess(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        showAlert(Alert.AlertType.INFORMATION, title, message);
     }
-    
+
     private void showError(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+        showAlert(Alert.AlertType.ERROR, title, message);
     }
-    
+
     private void showWarning(String title, String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
+        showAlert(Alert.AlertType.WARNING, title, message);
+    }
+
+    private void showAlert(Alert.AlertType type, String title, String message) {
+        Alert alert = new Alert(type);
         alert.setTitle(title);
         alert.setHeaderText(null);
         alert.setContentText(message);

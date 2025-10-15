@@ -160,6 +160,24 @@
                             <Tooltip text="Clear all input fields" />
                         </tooltip>
                     </Button>
+                    
+                    <Region HBox.hgrow="ALWAYS" />
+                    
+                    <Button text="Manage Enrollments" onAction="#handleManageEnrollments"
+                            style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
+                            prefWidth="180">
+                        <tooltip>
+                            <Tooltip text="Manage student course enrollments and grades" />
+                        </tooltip>
+                    </Button>
+                    
+                    <Button text="Manage Courses" onAction="#handleManageCourses"
+                            style="-fx-background-color: #8e44ad; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
+                            prefWidth="150">
+                        <tooltip>
+                            <Tooltip text="Manage course catalog" />
+                        </tooltip>
+                    </Button>
                 </HBox>
             </VBox>
             
