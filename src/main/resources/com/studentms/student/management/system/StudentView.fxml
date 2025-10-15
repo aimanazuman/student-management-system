@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<!-- BorderPane is the root layout container, dividing the window into regions -->
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
+            fx:controller="com.studentms.student.management.system.StudentViewController">
+    
+    <!-- TOP region: Header section with title -->
+    <top>
+        <VBox styleClass="header" style="-fx-background-color: #2c3e50; -fx-padding: 20;">
+            <Label text="Student Management System" textFill="white">
+                <font>
+                    <Font name="System Bold" size="24.0" />
+                </font>
+            </Label>
+            <Label text="Manage student records efficiently" textFill="#ecf0f1" style="-fx-padding: 5 0 0 0;">
+                <font>
+                    <Font size="14.0" />
+                </font>
+            </Label>
+        </VBox>
+    </top>
+    
+    <!-- CENTER region: Main content area with form and table -->
+    <center>
+        <VBox spacing="20" style="-fx-padding: 20;">
+            
+            <!-- Form section for input fields -->
+            <VBox spacing="15" style="-fx-background-color: #ffffff; -fx-padding: 20; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5;">
+                
+                <Label text="Student Information" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+                
+                <!-- GridPane organizes input fields in rows and columns -->
+                <GridPane hgap="15" vgap="12">
+                    
+                    <!-- Row 0: Full Name -->
+                    <Label text="Full Name:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                    <TextField fx:id="fullNameField" promptText="Enter full name" 
+                               GridPane.columnIndex="1" GridPane.rowIndex="0" 
+                               prefWidth="250">
+                        <tooltip>
+                            <Tooltip text="Enter the student's complete name" />
+                        </tooltip>
+                    </TextField>
+                    
+                    <!-- Row 0: Email (in column 2-3) -->
+                    <Label text="Email:" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                        <GridPane.margin>
+                            <Insets left="20" />
+                        </GridPane.margin>
+                    </Label>
+                    <TextField fx:id="emailField" promptText="student@example.com" 
+                               GridPane.columnIndex="3" GridPane.rowIndex="0"
+                               prefWidth="250">
+                        <tooltip>
+                            <Tooltip text="Enter a valid email address" />
+                        </tooltip>
+                    </TextField>
+                    
+                    <!-- Row 1: Phone -->
+                    <Label text="Phone:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                    <TextField fx:id="phoneField" promptText="Enter phone number" 
+                               GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                    
+                    <!-- Row 1: Date of Birth -->
+                    <Label text="Date of Birth:" GridPane.columnIndex="2" GridPane.rowIndex="1">
+                        <GridPane.margin>
+                            <Insets left="20" />
+                        </GridPane.margin>
+                    </Label>
+                    <DatePicker fx:id="dateOfBirthPicker" promptText="Select date" 
+                                GridPane.columnIndex="3" GridPane.rowIndex="1"
+                                prefWidth="250">
+                        <tooltip>
+                            <Tooltip text="Select the student's birth date" />
+                        </tooltip>
+                    </DatePicker>
+                    
+                    <!-- Row 2: Gender using RadioButtons -->
+                    <Label text="Gender:" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                    <HBox spacing="15" GridPane.columnIndex="1" GridPane.rowIndex="2">
+                        <RadioButton fx:id="maleRadio" text="Male">
+                            <toggleGroup>
+                                <ToggleGroup fx:id="genderGroup" />
+                            </toggleGroup>
+                        </RadioButton>
+                        <RadioButton fx:id="femaleRadio" text="Female" toggleGroup="$genderGroup" />
+                        <RadioButton fx:id="otherRadio" text="Other" toggleGroup="$genderGroup" />
+                    </HBox>
+                    
+                    <!-- Row 2: Enrollment Date -->
+                    <Label text="Enrollment Date:" GridPane.columnIndex="2" GridPane.rowIndex="2">
+                        <GridPane.margin>
+                            <Insets left="20" />
+                        </GridPane.margin>
+                    </Label>
+                    <DatePicker fx:id="enrollmentDatePicker" 
+                                GridPane.columnIndex="3" GridPane.rowIndex="2"
+                                prefWidth="250">
+                        <tooltip>
+                            <Tooltip text="Select enrollment date" />
+                        </tooltip>
+                    </DatePicker>
+                    
+                    <!-- Row 3: Address (spans multiple columns) -->
+                    <Label text="Address:" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                    <TextArea fx:id="addressArea" promptText="Enter full address" 
+                              wrapText="true" prefRowCount="2"
+                              GridPane.columnIndex="1" GridPane.rowIndex="3" 
+                              GridPane.columnSpan="3">
+                        <tooltip>
+                            <Tooltip text="Enter the student's residential address" />
+                        </tooltip>
+                    </TextArea>
+                    
+                    <!-- Row 4: Status using CheckBox -->
+                    <Label text="Status:" GridPane.columnIndex="0" GridPane.rowIndex="4" />
+                    <CheckBox fx:id="activeCheckBox" text="Active Student" selected="true"
+                              GridPane.columnIndex="1" GridPane.rowIndex="4">
+                        <tooltip>
+                            <Tooltip text="Check if student is currently active" />
+                        </tooltip>
+                    </CheckBox>
+                </GridPane>
+                
+                <!-- Action buttons section -->
+                <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10 0 0 0;">
+                    <Button fx:id="addButton" text="Add Student" onAction="#handleAddStudent" 
+                            style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
+                            prefWidth="120">
+                        <tooltip>
+                            <Tooltip text="Add a new student record" />
+                        </tooltip>
+                    </Button>
+                    
+                    <Button fx:id="updateButton" text="Update Student" onAction="#handleUpdateStudent" 
+                            style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
+                            prefWidth="120">
+                        <tooltip>
+                            <Tooltip text="Update selected student record" />
+                        </tooltip>
+                    </Button>
+                    
+                    <Button fx:id="deleteButton" text="Delete Student" onAction="#handleDeleteStudent" 
+                            style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
+                            prefWidth="120">
+                        <tooltip>
+                            <Tooltip text="Delete selected student record" />
+                        </tooltip>
+                    </Button>
+                    
+                    <Button fx:id="clearButton" text="Clear Form" onAction="#handleClearForm" 
+                            style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
+                            prefWidth="120">
+                        <tooltip>
+                            <Tooltip text="Clear all input fields" />
+                        </tooltip>
+                    </Button>
+                </HBox>
+            </VBox>
+            
+            <!-- Search section -->
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="Search:" style="-fx-font-size: 14px;" />
+                <TextField fx:id="searchField" promptText="Search by name..." 
+                           prefWidth="300" onKeyReleased="#handleSearch">
+                    <tooltip>
+                        <Tooltip text="Type to search students by name" />
+                    </tooltip>
+                </TextField>
+                <Button text="Refresh" onAction="#handleRefresh" 
+                        style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-padding: 5 15;" />
+            </HBox>
+            
+            <!-- TableView to display all students -->
+            <TableView fx:id="studentTable" VBox.vgrow="ALWAYS" 
+                       style="-fx-border-color: #bdc3c7; -fx-border-radius: 5;">
+                <columns>
+                    <!-- Each TableColumn is bound to a Student property -->
+                    <TableColumn fx:id="idColumn" text="ID" prefWidth="60" />
+                    <TableColumn fx:id="nameColumn" text="Full Name" prefWidth="180" />
+                    <TableColumn fx:id="emailColumn" text="Email" prefWidth="200" />
+                    <TableColumn fx:id="phoneColumn" text="Phone" prefWidth="120" />
+                    <TableColumn fx:id="dobColumn" text="Date of Birth" prefWidth="120" />
+                    <TableColumn fx:id="genderColumn" text="Gender" prefWidth="80" />
+                    <TableColumn fx:id="addressColumn" text="Address" prefWidth="200" />
+                    <TableColumn fx:id="enrollDateColumn" text="Enrollment Date" prefWidth="130" />
+                    <TableColumn fx:id="statusColumn" text="Status" prefWidth="80" />
+                </columns>
+                <tooltip>
+                    <Tooltip text="Click on a row to select a student for editing" />
+                </tooltip>
+            </TableView>
+            
+        </VBox>
+    </center>
+    
+    <!-- BOTTOM region: Status bar -->
+    <bottom>
+        <VBox>
+            <!-- Report Generation Section -->
+            <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-background-color: #f8f9fa; -fx-padding: 10; -fx-border-color: #dee2e6; -fx-border-width: 1 0 0 0;">
+                <Label text="Reports:" style="-fx-font-weight: bold; -fx-font-size: 13px;" />
+                <Button text="Generate Full Report" onAction="#handleGenerateReport"
+                        style="-fx-background-color: #6c757d; -fx-text-fill: white; -fx-padding: 5 15;">
+                    <tooltip>
+                        <Tooltip text="Generate a comprehensive text report" />
+                    </tooltip>
+                </Button>
+                <Button text="Export to CSV" onAction="#handleExportCSV"
+                        style="-fx-background-color: #28a745; -fx-text-fill: white; -fx-padding: 5 15;">
+                    <tooltip>
+                        <Tooltip text="Export student data to CSV file" />
+                    </tooltip>
+                </Button>
+                <Button text="Show Statistics" onAction="#handleShowStatistics"
+                        style="-fx-background-color: #17a2b8; -fx-text-fill: white; -fx-padding: 5 15;">
+                    <tooltip>
+                        <Tooltip text="Display statistical summary" />
+                    </tooltip>
+                </Button>
+            </HBox>
+            
+            <!-- Status Bar -->
+            <HBox style="-fx-background-color: #ecf0f1; -fx-padding: 10;">
+                <Label fx:id="statusLabel" text="Ready" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;" />
+            </HBox>
+        </VBox>
+    </bottom>
+    
+</BorderPane>
