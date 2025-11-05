@@ -35,23 +35,6 @@ public class DatabaseManager {
      * This should be called when the application starts
      */
     public static void initializeDatabase() {
-        // SQL statement to create the students table
-        // IF NOT EXISTS prevents errors if table already exists
-        String createStudentsTable = """
-            CREATE TABLE IF NOT EXISTS students (
-                student_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                full_name TEXT NOT NULL,
-                email TEXT UNIQUE NOT NULL,
-                phone TEXT,
-                date_of_birth TEXT,
-                gender TEXT,
-                address TEXT,
-                enrollment_date TEXT NOT NULL,
-                status TEXT DEFAULT 'Active'
-            )
-        """;
-        
-        // SQL statement to create the courses table
         String createCoursesTable = """
             CREATE TABLE IF NOT EXISTS courses (
                 course_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -61,19 +44,49 @@ public class DatabaseManager {
                 description TEXT
             )
         """;
-        
-        // SQL statement to create the enrollments table (links students to courses)
+
+        String createStudentsTable = """
+            CREATE TABLE IF NOT EXISTS students (
+                student_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                student_code TEXT UNIQUE NOT NULL,
+                full_name TEXT NOT NULL,
+                email TEXT UNIQUE NOT NULL,
+                phone TEXT,
+                date_of_birth TEXT,
+                gender TEXT,
+                address TEXT,
+                enrollment_date TEXT NOT NULL,
+                status TEXT DEFAULT 'Active',
+                course_id INTEGER,
+                FOREIGN KEY (course_id) REFERENCES courses(course_id)
+            )
+        """;
+
+        String createSubjectsTable = """
+            CREATE TABLE IF NOT EXISTS subjects (
+                subject_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                subject_code TEXT NOT NULL,
+                subject_name TEXT NOT NULL,
+                subject_section TEXT NOT NULL,
+                credits INTEGER,
+                description TEXT,
+                course_id INTEGER,
+                FOREIGN KEY (course_id) REFERENCES courses(course_id),
+                UNIQUE(subject_code, subject_section)
+            )
+        """;
+
         String createEnrollmentsTable = """
             CREATE TABLE IF NOT EXISTS enrollments (
                 enrollment_id INTEGER PRIMARY KEY AUTOINCREMENT,
                 student_id INTEGER NOT NULL,
-                course_id INTEGER NOT NULL,
+                subject_id INTEGER NOT NULL,
                 semester TEXT,
                 grade TEXT,
                 enrollment_year INTEGER,
-                FOREIGN KEY (student_id) REFERENCES students(student_id),
-                FOREIGN KEY (course_id) REFERENCES courses(course_id),
-                UNIQUE(student_id, course_id, semester, enrollment_year)
+                FOREIGN KEY (student_id) REFERENCES students(student_id) ON DELETE CASCADE,
+                FOREIGN KEY (subject_id) REFERENCES subjects(subject_id) ON DELETE CASCADE,
+                UNIQUE(student_id, subject_id, semester, enrollment_year)
             )
         """;
         
@@ -82,8 +95,9 @@ public class DatabaseManager {
              Statement stmt = conn.createStatement()) {
             
             // Execute each CREATE TABLE statement
-            stmt.execute(createStudentsTable);
             stmt.execute(createCoursesTable);
+            stmt.execute(createStudentsTable);
+            stmt.execute(createSubjectsTable);
             stmt.execute(createEnrollmentsTable);
             
             System.out.println("Database initialized successfully!");
@@ -95,18 +109,43 @@ public class DatabaseManager {
     }
     
     /**
+     * Generates the next student code (ST001, ST002, etc.)
+     */
+    public static String generateNextStudentCode() {
+        String sql = "SELECT student_code FROM students ORDER BY student_id DESC LIMIT 1";
+        
+        try (Connection conn = getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            
+            if (rs.next()) {
+                String lastCode = rs.getString("student_code");
+                // Extract number from ST001 format
+                int number = Integer.parseInt(lastCode.substring(2));
+                return String.format("ST%03d", number + 1);
+            } else {
+                return "ST001"; // First student
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error generating student code: " + e.getMessage());
+            return "ST001";
+        }
+    }
+    
+    /**
      * Creates a new student record in the database
      * Returns the generated student ID, or -1 if insertion failed
      */
-    public static int createStudent(String fullName, String email, String phone, 
+    public static int createStudent(String studentCode, String fullName, String email, String phone, 
                                    String dateOfBirth, String gender, String address, 
                                    String enrollmentDate) {
         // SQL INSERT statement with placeholders (?) for security
         // Using placeholders prevents SQL injection attacks
         String sql = """
-            INSERT INTO students (full_name, email, phone, date_of_birth, 
+            INSERT INTO students (student_code, full_name, email, phone, date_of_birth, 
                                  gender, address, enrollment_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'Active')
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'Active')
         """;
         
         try (Connection conn = getConnection();
@@ -114,13 +153,14 @@ public class DatabaseManager {
              PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             
             // Set values for each placeholder in order
-            pstmt.setString(1, fullName);
-            pstmt.setString(2, email);
-            pstmt.setString(3, phone);
-            pstmt.setString(4, dateOfBirth);
-            pstmt.setString(5, gender);
-            pstmt.setString(6, address);
-            pstmt.setString(7, enrollmentDate);
+            pstmt.setString(1, studentCode);
+            pstmt.setString(2, fullName);
+            pstmt.setString(3, email);
+            pstmt.setString(4, phone);
+            pstmt.setString(5, dateOfBirth);
+            pstmt.setString(6, gender);
+            pstmt.setString(7, address);
+            pstmt.setString(8, enrollmentDate);
             
             // Execute the insert
             int affectedRows = pstmt.executeUpdate();
@@ -181,6 +221,42 @@ public class DatabaseManager {
             int affectedRows = pstmt.executeUpdate();
             return affectedRows > 0;
             
+        } catch (SQLException e) {
+            System.err.println("Error updating student: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Updates student with course enrollment
+     */
+    public static boolean updateStudentWithCourse(int studentId, String fullName, String email, 
+                                                 String phone, String dateOfBirth, String gender, 
+                                                 String address, String status, int courseId) {
+        String sql = """
+            UPDATE students 
+            SET full_name = ?, email = ?, phone = ?, date_of_birth = ?,
+                gender = ?, address = ?, status = ?, course_id = ?
+            WHERE student_id = ?
+        """;
+
+        try (Connection conn = getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, fullName);
+            pstmt.setString(2, email);
+            pstmt.setString(3, phone);
+            pstmt.setString(4, dateOfBirth);
+            pstmt.setString(5, gender);
+            pstmt.setString(6, address);
+            pstmt.setString(7, status);
+            pstmt.setInt(8, courseId);
+            pstmt.setInt(9, studentId);
+
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+
         } catch (SQLException e) {
             System.err.println("Error updating student: " + e.getMessage());
             e.printStackTrace();
@@ -269,81 +345,6 @@ public class DatabaseManager {
     }
     
     /**
-     * Enrolls a student in a course
-     */
-    public static int enrollStudentInCourse(int studentId, int courseId, 
-                                           String semester, int year) {
-        String sql = """
-            INSERT INTO enrollments (student_id, course_id, semester, enrollment_year)
-            VALUES (?, ?, ?, ?)
-        """;
-        
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            
-            pstmt.setInt(1, studentId);
-            pstmt.setInt(2, courseId);
-            pstmt.setString(3, semester);
-            pstmt.setInt(4, year);
-            
-            int affectedRows = pstmt.executeUpdate();
-            
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        return generatedKeys.getInt(1);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error enrolling student: " + e.getMessage());
-            e.printStackTrace();
-        }
-        
-        return -1;
-    }
-    
-    /**
-     * Updates a grade for a student's enrollment
-     */
-    public static boolean updateGrade(int enrollmentId, String grade) {
-        String sql = "UPDATE enrollments SET grade = ? WHERE enrollment_id = ?";
-        
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setString(1, grade);
-            pstmt.setInt(2, enrollmentId);
-            
-            int affectedRows = pstmt.executeUpdate();
-            return affectedRows > 0;
-            
-        } catch (SQLException e) {
-            System.err.println("Error updating grade: " + e.getMessage());
-            e.printStackTrace();
-            return false;
-        }
-    }
-    
-    /**
-     * Gets all enrollments for a specific student
-     */
-    public static ResultSet getStudentEnrollments(int studentId) throws SQLException {
-        Connection conn = getConnection();
-        String sql = """
-            SELECT e.enrollment_id, e.student_id, e.course_id, e.semester, 
-                   e.grade, e.enrollment_year, c.course_code, c.course_name, c.credits
-            FROM enrollments e
-            JOIN courses c ON e.course_id = c.course_id
-            WHERE e.student_id = ?
-            ORDER BY e.enrollment_year DESC, e.semester
-        """;
-        PreparedStatement pstmt = conn.prepareStatement(sql);
-        pstmt.setInt(1, studentId);
-        return pstmt.executeQuery();
-    }
-    
-    /**
      * Updates a course in the database
      */
     public static boolean updateCourse(int courseId, String courseCode, String courseName,
@@ -394,6 +395,241 @@ public class DatabaseManager {
     }
     
     /**
+     * Gets a course by its ID
+     */
+    public static ResultSet getCourseById(int courseId) throws SQLException {
+        Connection conn = getConnection();
+        String sql = "SELECT * FROM courses WHERE course_id = ?";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setInt(1, courseId);
+        return pstmt.executeQuery();
+    }
+    
+    // ==================== SUBJECT MANAGEMENT METHODS ====================
+    
+    /**
+     * Creates a new subject in the database (with course link)
+     */
+    public static int createSubject(String subjectCode, String subjectName, String subjectSection, 
+                                   int credits, String description, int courseId) {
+        String sql = """
+            INSERT INTO subjects (subject_code, subject_name, subject_section, credits, description, course_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """;
+
+        try (Connection conn = getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+
+            pstmt.setString(1, subjectCode);
+            pstmt.setString(2, subjectName);
+            pstmt.setString(3, subjectSection);
+            pstmt.setInt(4, credits);
+            pstmt.setString(5, description);
+            pstmt.setInt(6, courseId);
+
+            int affectedRows = pstmt.executeUpdate();
+
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error creating subject: " + e.getMessage());
+            e.printStackTrace();
+        }
+
+        return -1;
+    }
+    
+    /**
+     * Creates a new subject in the database (backward compatibility - no course link)
+     */
+    public static int createSubject(String subjectCode, String subjectName, String subjectSection, 
+                                   int credits, String description) {
+        return createSubject(subjectCode, subjectName, subjectSection, credits, description, 0);
+    }
+    
+    /**
+     * Retrieves all subjects from the database
+     */
+    public static ResultSet getAllSubjects() throws SQLException {
+        Connection conn = getConnection();
+        String sql = "SELECT * FROM subjects ORDER BY subject_code, subject_section";
+        Statement stmt = conn.createStatement();
+        return stmt.executeQuery(sql);
+    }
+    
+    /**
+     * Updates a subject in the database (with course link)
+     */
+    public static boolean updateSubject(int subjectId, String subjectCode, String subjectName, 
+                                       String subjectSection, int credits, String description, int courseId) {
+        String sql = """
+            UPDATE subjects 
+            SET subject_code = ?, subject_name = ?, subject_section = ?, credits = ?, description = ?, course_id = ?
+            WHERE subject_id = ?
+        """;
+
+        try (Connection conn = getConnection(); 
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setString(1, subjectCode);
+            pstmt.setString(2, subjectName);
+            pstmt.setString(3, subjectSection);
+            pstmt.setInt(4, credits);
+            pstmt.setString(5, description);
+            pstmt.setInt(6, courseId);
+            pstmt.setInt(7, subjectId);
+
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+
+        } catch (SQLException e) {
+            System.err.println("Error updating subject: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Updates a subject in the database (backward compatibility - no course link)
+     */
+    public static boolean updateSubject(int subjectId, String subjectCode, String subjectName, 
+                                       String subjectSection, int credits, String description) {
+        return updateSubject(subjectId, subjectCode, subjectName, subjectSection, credits, description, 0);
+    }
+    
+    /**
+     * Deletes a subject from the database
+     */
+    public static boolean deleteSubject(int subjectId) {
+        String sql = "DELETE FROM subjects WHERE subject_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, subjectId);
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error deleting subject: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    // ==================== ENROLLMENT MANAGEMENT METHODS ====================
+    
+    /**
+     * Enrolls a student in a subject
+     */
+    public static int enrollStudentInSubject(int studentId, int subjectId, 
+                                           String semester, int year) {
+        String sql = """
+            INSERT INTO enrollments (student_id, subject_id, semester, enrollment_year)
+            VALUES (?, ?, ?, ?)
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, subjectId);
+            pstmt.setString(3, semester);
+            pstmt.setInt(4, year);
+            
+            int affectedRows = pstmt.executeUpdate();
+            
+            if (affectedRows > 0) {
+                try (ResultSet generatedKeys = pstmt.getGeneratedKeys()) {
+                    if (generatedKeys.next()) {
+                        return generatedKeys.getInt(1);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error enrolling student: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return -1;
+    }
+    
+    /**
+     * Gets all enrollments for a specific student
+     */
+    public static ResultSet getStudentEnrollments(int studentId) throws SQLException {
+        Connection conn = getConnection();
+        String sql = """
+            SELECT e.enrollment_id, e.student_id, e.subject_id, e.semester, 
+                   e.grade, e.enrollment_year, s.subject_code, s.subject_name, 
+                   s.subject_section, s.credits
+            FROM enrollments e
+            JOIN subjects s ON e.subject_id = s.subject_id
+            WHERE e.student_id = ?
+            ORDER BY e.enrollment_year DESC, e.semester
+        """;
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setInt(1, studentId);
+        return pstmt.executeQuery();
+    }
+    
+    /**
+     * Checks if a student is already enrolled in a subject for a specific semester
+     */
+    public static boolean isStudentEnrolledInSubject(int studentId, int subjectId, String semester, int year) {
+        String sql = """
+            SELECT COUNT(*) as count FROM enrollments 
+            WHERE student_id = ? AND subject_id = ? AND semester = ? AND enrollment_year = ?
+        """;
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setInt(1, studentId);
+            pstmt.setInt(2, subjectId);
+            pstmt.setString(3, semester);
+            pstmt.setInt(4, year);
+            
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("count") > 0;
+            }
+            
+        } catch (SQLException e) {
+            System.err.println("Error checking enrollment: " + e.getMessage());
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Updates a grade for a student's enrollment
+     */
+    public static boolean updateGrade(int enrollmentId, String grade) {
+        String sql = "UPDATE enrollments SET grade = ? WHERE enrollment_id = ?";
+        
+        try (Connection conn = getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            
+            pstmt.setString(1, grade);
+            pstmt.setInt(2, enrollmentId);
+            
+            int affectedRows = pstmt.executeUpdate();
+            return affectedRows > 0;
+            
+        } catch (SQLException e) {
+            System.err.println("Error updating grade: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
      * Deletes an enrollment record
      */
     public static boolean deleteEnrollment(int enrollmentId) {
@@ -413,43 +649,28 @@ public class DatabaseManager {
         }
     }
     
+    // ==================== AUTHENTICATION METHODS ====================
+    
     /**
-     * Gets a course by its ID
+     * Authenticates a student using email and student code
      */
-    public static ResultSet getCourseById(int courseId) throws SQLException {
+    public static ResultSet authenticateStudent(String email, String studentCode) throws SQLException {
         Connection conn = getConnection();
-        String sql = "SELECT * FROM courses WHERE course_id = ?";
+        String sql = "SELECT * FROM students WHERE email = ? AND student_code = ?";
         PreparedStatement pstmt = conn.prepareStatement(sql);
-        pstmt.setInt(1, courseId);
+        pstmt.setString(1, email);
+        pstmt.setString(2, studentCode);
         return pstmt.executeQuery();
     }
     
     /**
-     * Checks if a student is already enrolled in a course for a specific semester
+     * Gets student by student code
      */
-    public static boolean isStudentEnrolled(int studentId, int courseId, String semester, int year) {
-        String sql = """
-            SELECT COUNT(*) as count FROM enrollments 
-            WHERE student_id = ? AND course_id = ? AND semester = ? AND enrollment_year = ?
-        """;
-        
-        try (Connection conn = getConnection();
-             PreparedStatement pstmt = conn.prepareStatement(sql)) {
-            
-            pstmt.setInt(1, studentId);
-            pstmt.setInt(2, courseId);
-            pstmt.setString(3, semester);
-            pstmt.setInt(4, year);
-            
-            ResultSet rs = pstmt.executeQuery();
-            if (rs.next()) {
-                return rs.getInt("count") > 0;
-            }
-            
-        } catch (SQLException e) {
-            System.err.println("Error checking enrollment: " + e.getMessage());
-        }
-        
-        return false;
+    public static ResultSet getStudentByCode(String studentCode) throws SQLException {
+        Connection conn = getConnection();
+        String sql = "SELECT * FROM students WHERE student_code = ?";
+        PreparedStatement pstmt = conn.prepareStatement(sql);
+        pstmt.setString(1, studentCode);
+        return pstmt.executeQuery();
     }
 }

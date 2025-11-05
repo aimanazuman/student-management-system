@@ -1,22 +1,34 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.*?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.Tooltip?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
 <?import javafx.scene.text.Font?>
 
-<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1" 
-            fx:controller="com.studentms.student.management.system.EnrollmentViewController">
+<BorderPane prefHeight="780.0" xmlns="http://javafx.com/javafx/24.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.studentms.student.management.system.EnrollmentViewController">
     
     <!-- TOP region: Header -->
     <top>
-        <VBox styleClass="header" style="-fx-background-color: #2c3e50; -fx-padding: 20;">
-            <Label text="Student Enrollment and Results" textFill="white">
+        <VBox style="-fx-background-color: #2c3e50; -fx-padding: 10 20;" styleClass="header">
+            <Label text="Subject Assignment and Grades Management" textFill="white">
                 <font>
                     <Font name="System Bold" size="24.0" />
                 </font>
             </Label>
-            <Label text="Manage course enrollments and grades" textFill="#ecf0f1" style="-fx-padding: 5 0 0 0;">
+            <Label style="-fx-padding: 5 0 0 0;" text="Assign subjects to students and manage grades" textFill="#ecf0f1">
                 <font>
                     <Font size="14.0" />
                 </font>
@@ -26,137 +38,135 @@
     
     <!-- CENTER region: Main content -->
     <center>
-        <VBox spacing="20" style="-fx-padding: 20;">
+        <VBox spacing="10.0" style="-fx-padding: 20 20 10 20;">
             
             <!-- Student Selection Section -->
-            <VBox spacing="15" style="-fx-background-color: #ffffff; -fx-padding: 20; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5;">
+            <VBox spacing="15" style="-fx-background-color: #ffffff; -fx-padding: 5 20; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5;">
                 
-                <Label text="Select Student" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+                <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Select Student" />
                 
-                <HBox spacing="15" alignment="CENTER_LEFT">
-                    <Label text="Student:" style="-fx-font-size: 14px;" />
-                    <ComboBox fx:id="studentComboBox" promptText="Select a student" 
-                              prefWidth="400" onAction="#handleStudentSelection">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Label style="-fx-font-size: 14px;" text="Student:" />
+                    <ComboBox fx:id="studentComboBox" onAction="#handleStudentSelection" prefWidth="400" promptText="Select a student">
                         <tooltip>
-                            <Tooltip text="Select student to view/manage enrollments" />
+                            <Tooltip text="Select student to manage subjects" />
                         </tooltip>
                     </ComboBox>
                     
-                    <Label fx:id="studentInfoLabel" text="" 
-                           style="-fx-font-size: 13px; -fx-text-fill: #7f8c8d; -fx-font-style: italic;" />
+                    <Label fx:id="studentInfoLabel" style="-fx-font-size: 13px; -fx-text-fill: #7f8c8d; -fx-font-style: italic;" text="" />
                 </HBox>
             </VBox>
             
-            <!-- Enrollment Form -->
-            <VBox spacing="15" style="-fx-background-color: #ffffff; -fx-padding: 20; -fx-border-color: #bdc3c7; -fx-border-radius: 5; -fx-background-radius: 5;">
+            <!-- Tab for two different operations -->
+            <TabPane prefHeight="225.0" style="-fx-border-color: #bdc3c7;" tabClosingPolicy="UNAVAILABLE">
                 
-                <Label text="Enrollment Information" style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
+                <!-- TAB 1: Assign Subjects -->
+                <Tab text="Assign Subjects">
+                    <VBox spacing="15" style="-fx-padding: 20;">
+                        
+                        <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Assign Subject to Student" />
+                        
+                        <GridPane hgap="15" vgap="12">
+                            
+                            <!-- Subject Selection -->
+                            <Label text="Subject:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                            <ComboBox fx:id="subjectComboBox" prefWidth="350" promptText="Select a subject" GridPane.columnIndex="1" GridPane.rowIndex="0">
+                                <tooltip>
+                                    <Tooltip text="Select subject to assign" />
+                                </tooltip>
+                            </ComboBox>
+                            
+                            <!-- Semester -->
+                            <Label text="Semester:" GridPane.columnIndex="2" GridPane.rowIndex="0">
+                                <GridPane.margin>
+                                    <Insets left="20" />
+                                </GridPane.margin>
+                            </Label>
+                            <ComboBox fx:id="semesterComboBox" prefWidth="150" GridPane.columnIndex="3" GridPane.rowIndex="0">
+                                <tooltip>
+                                    <Tooltip text="Select semester (1-9)" />
+                                </tooltip>
+                            </ComboBox>
+                            
+                            <!-- Year -->
+                            <Label text="Year:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                            <Spinner fx:id="yearSpinner" editable="true" prefWidth="150" GridPane.columnIndex="1" GridPane.rowIndex="1">
+                                <tooltip>
+                                    <Tooltip text="Select enrollment year" />
+                                </tooltip>
+                            </Spinner>
+                     <columnConstraints>
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                        <ColumnConstraints />
+                     </columnConstraints>
+                     <rowConstraints>
+                        <RowConstraints />
+                        <RowConstraints />
+                     </rowConstraints>
+                            
+                        </GridPane>
+                        
+                        <!-- Action buttons -->
+                        <HBox alignment="CENTER_LEFT" spacing="10" style="-fx-padding: 0 0 0 0;">
+                            <Button fx:id="assignButton" onAction="#handleAssignSubject" prefWidth="130" style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;" text="Assign Subject" />
+                            
+                            <Button fx:id="removeAssignmentButton" onAction="#handleRemoveAssignment" prefWidth="150" style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;" text="Remove Assignment" />
+                        </HBox>
+                        
+                    </VBox>
+                </Tab>
                 
-                <GridPane hgap="15" vgap="12">
-                    
-                    <!-- Course Selection -->
-                    <Label text="Course:" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                    <ComboBox fx:id="courseComboBox" promptText="Select a course" 
-                              GridPane.columnIndex="1" GridPane.rowIndex="0"
-                              prefWidth="350">
-                        <tooltip>
-                            <Tooltip text="Select course to enroll" />
-                        </tooltip>
-                    </ComboBox>
-                    
-                    <!-- Semester -->
-                    <Label text="Semester:" GridPane.columnIndex="2" GridPane.rowIndex="0">
-                        <GridPane.margin>
-                            <Insets left="20" />
-                        </GridPane.margin>
-                    </Label>
-                    <ComboBox fx:id="semesterComboBox" 
-                              GridPane.columnIndex="3" GridPane.rowIndex="0"
-                              prefWidth="150">
-                        <tooltip>
-                            <Tooltip text="Select semester" />
-                        </tooltip>
-                    </ComboBox>
-                    
-                    <!-- Year -->
-                    <Label text="Year:" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                    <Spinner fx:id="yearSpinner" 
-                             GridPane.columnIndex="1" GridPane.rowIndex="1"
-                             prefWidth="150"
-                             editable="true">
-                        <tooltip>
-                            <Tooltip text="Select enrollment year" />
-                        </tooltip>
-                    </Spinner>
-                    
-                    <!-- Grade -->
-                    <Label text="Grade:" GridPane.columnIndex="2" GridPane.rowIndex="1">
-                        <GridPane.margin>
-                            <Insets left="20" />
-                        </GridPane.margin>
-                    </Label>
-                    <ComboBox fx:id="gradeComboBox" 
-                              GridPane.columnIndex="3" GridPane.rowIndex="1"
-                              prefWidth="150">
-                        <tooltip>
-                            <Tooltip text="Assign grade (optional for enrollment)" />
-                        </tooltip>
-                    </ComboBox>
-                    
-                </GridPane>
+                <!-- TAB 2: Enter Grades -->
+                <Tab text="Enter/Update Grades">
+                    <VBox spacing="15" style="-fx-padding: 20;">
+                        
+                        <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Enter or Update Grades" />
+                        
+                        <HBox alignment="CENTER_LEFT" spacing="15">
+                            <Label style="-fx-font-size: 13px;" text="Select assignment from table below, then choose grade:" />
+                            <ComboBox fx:id="gradeComboBox" prefWidth="100">
+                                <tooltip>
+                                    <Tooltip text="Select grade to assign" />
+                                </tooltip>
+                            </ComboBox>
+                            <Button onAction="#handleUpdateGrade" style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 8 20;" text="Update Grade" />
+                        </HBox>
+                        
+                    </VBox>
+                </Tab>
                 
-                <!-- Action buttons -->
-                <HBox spacing="10" alignment="CENTER_LEFT" style="-fx-padding: 10 0 0 0;">
-                    <Button fx:id="enrollButton" text="Enroll Student" onAction="#handleEnrollStudent" 
-                            style="-fx-background-color: #27ae60; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
-                            prefWidth="130" />
-                    
-                    <Button fx:id="updateGradeButton" text="Update Grade" onAction="#handleUpdateGrade" 
-                            style="-fx-background-color: #f39c12; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
-                            prefWidth="130" />
-                    
-                    <Button fx:id="dropCourseButton" text="Drop Course" onAction="#handleDropCourse" 
-                            style="-fx-background-color: #e74c3c; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
-                            prefWidth="130" />
-                    
-                    <Button fx:id="clearFormButton" text="Clear Form" onAction="#handleClearForm" 
-                            style="-fx-background-color: #95a5a6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
-                            prefWidth="120" />
-                    
-                    <Button text="Manage Courses" onAction="#handleManageCourses"
-                            style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
-                            prefWidth="150" />
-                    
-                    <Button text="Back to Students" onAction="#handleBackToStudents"
-                            style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;"
-                            prefWidth="150" />
-                </HBox>
-            </VBox>
+            </TabPane>
             
-            <!-- Student Enrollments Table -->
-            <VBox spacing="10">
-                <HBox spacing="15" alignment="CENTER_LEFT">
-                    <Label text="Student's Enrolled Courses" 
-                           style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" />
-                    <Label fx:id="gpaLabel" text="GPA: N/A" 
-                           style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #27ae60;" />
-                    <Label fx:id="totalCreditsLabel" text="Total Credits: 0" 
-                           style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;" />
+            <!-- Student's Assigned Subjects Table -->
+            <VBox spacing="10" VBox.vgrow="ALWAYS">
+                <HBox alignment="CENTER_LEFT" spacing="15">
+                    <Label style="-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: #2c3e50;" text="Student's Subjects" />
+                    <Label fx:id="cgpaLabel" style="-fx-font-size: 14px; -fx-font-weight: bold; -fx-text-fill: #27ae60;" text="CGPA: N/A" />
+                    <Label fx:id="totalCreditsLabel" style="-fx-font-size: 14px; -fx-text-fill: #7f8c8d;" text="Total Credits: 0" />
                 </HBox>
                 
-                <TableView fx:id="enrollmentTable" VBox.vgrow="ALWAYS" 
-                           style="-fx-border-color: #bdc3c7; -fx-border-radius: 5;">
+                <TableView fx:id="enrollmentTable" prefHeight="180.0" style="-fx-border-color: #bdc3c7; -fx-border-radius: 5;" VBox.vgrow="ALWAYS">
                     <columns>
-                        <TableColumn fx:id="enrollmentIdColumn" text="ID" prefWidth="50" />
-                        <TableColumn fx:id="courseCodeColumn" text="Course Code" prefWidth="120" />
-                        <TableColumn fx:id="courseNameColumn" text="Course Name" prefWidth="300" />
-                        <TableColumn fx:id="creditsColumn" text="Credits" prefWidth="80" />
-                        <TableColumn fx:id="semesterColumn" text="Semester" prefWidth="120" />
-                        <TableColumn fx:id="yearColumn" text="Year" prefWidth="80" />
-                        <TableColumn fx:id="gradeColumn" text="Grade" prefWidth="80" />
+                        <TableColumn fx:id="enrollmentIdColumn" prefWidth="50" text="ID" />
+                        <TableColumn fx:id="subjectCodeColumn" prefWidth="120" text="Subject Code" />
+                        <TableColumn fx:id="subjectNameColumn" prefWidth="250" text="Subject Name" />
+                        <TableColumn fx:id="sectionColumn" prefWidth="80" text="Section" />
+                        <TableColumn fx:id="creditsColumn" prefWidth="80" text="Credits" />
+                        <TableColumn fx:id="semesterColumn" prefWidth="100" text="Semester" />
+                        <TableColumn fx:id="yearColumn" prefWidth="80" text="Year" />
+                        <TableColumn fx:id="gradeColumn" prefWidth="80" text="Grade" />
                     </columns>
                 </TableView>
             </VBox>
+            
+            <!-- Navigation Buttons -->
+            <HBox alignment="CENTER_LEFT" spacing="10">
+                <Button onAction="#handleManageSubjects" prefWidth="150" style="-fx-background-color: #9b59b6; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;" text="Manage Subjects" />
+                
+                <Button onAction="#handleBackToStudents" prefWidth="150" style="-fx-background-color: #3498db; -fx-text-fill: white; -fx-font-weight: bold; -fx-padding: 10 20;" text="Back to Students" />
+            </HBox>
             
         </VBox>
     </center>
@@ -164,8 +174,7 @@
     <!-- BOTTOM region: Status bar -->
     <bottom>
         <HBox style="-fx-background-color: #ecf0f1; -fx-padding: 10;">
-            <Label fx:id="statusLabel" text="Ready - Select a student to begin" 
-                   style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;" />
+            <Label fx:id="statusLabel" style="-fx-font-size: 12px; -fx-text-fill: #7f8c8d;" text="Ready - Select a student to begin" />
         </HBox>
     </bottom>
     

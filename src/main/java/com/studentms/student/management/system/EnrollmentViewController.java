@@ -21,38 +21,38 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Controller for Enrollment Management
- * Handles course enrollments and grade management for students
+ * Redesigned Controller for Subject Assignment and Grade Management
+ * Separates subject assignment from grade entry for clarity
  */
 public class EnrollmentViewController {
     
     @FXML private ComboBox<Student> studentComboBox;
-    @FXML private ComboBox<Course> courseComboBox;
+    @FXML private ComboBox<Subject> subjectComboBox;
     @FXML private ComboBox<String> semesterComboBox;
     @FXML private ComboBox<String> gradeComboBox;
     @FXML private Spinner<Integer> yearSpinner;
     
-    @FXML private TableView<Enrollment> enrollmentTable;
-    @FXML private TableColumn<Enrollment, Integer> enrollmentIdColumn;
-    @FXML private TableColumn<Enrollment, String> courseCodeColumn;
-    @FXML private TableColumn<Enrollment, String> courseNameColumn;
-    @FXML private TableColumn<Enrollment, Integer> creditsColumn;
-    @FXML private TableColumn<Enrollment, String> semesterColumn;
-    @FXML private TableColumn<Enrollment, Integer> yearColumn;
-    @FXML private TableColumn<Enrollment, String> gradeColumn;
+    @FXML private TableView<EnrollmentRecord> enrollmentTable;
+    @FXML private TableColumn<EnrollmentRecord, Integer> enrollmentIdColumn;
+    @FXML private TableColumn<EnrollmentRecord, String> subjectCodeColumn;
+    @FXML private TableColumn<EnrollmentRecord, String> subjectNameColumn;
+    @FXML private TableColumn<EnrollmentRecord, String> sectionColumn;
+    @FXML private TableColumn<EnrollmentRecord, Integer> creditsColumn;
+    @FXML private TableColumn<EnrollmentRecord, String> semesterColumn;
+    @FXML private TableColumn<EnrollmentRecord, Integer> yearColumn;
+    @FXML private TableColumn<EnrollmentRecord, String> gradeColumn;
     
     @FXML private Label statusLabel;
     @FXML private Label studentInfoLabel;
-    @FXML private Label gpaLabel;
+    @FXML private Label cgpaLabel;
     @FXML private Label totalCreditsLabel;
     
-    @FXML private Button enrollButton;
-    @FXML private Button updateGradeButton;
-    @FXML private Button dropCourseButton;
+    @FXML private Button assignButton;
+    @FXML private Button removeAssignmentButton;
     
-    private ObservableList<Enrollment> enrollmentList = FXCollections.observableArrayList();
+    private ObservableList<EnrollmentRecord> enrollmentList = FXCollections.observableArrayList();
     private ObservableList<Student> studentList = FXCollections.observableArrayList();
-    private ObservableList<Course> courseList = FXCollections.observableArrayList();
+    private ObservableList<Subject> subjectList = FXCollections.observableArrayList();
     
     // Grade point mapping for GPA calculation
     private final Map<String, Double> gradePoints = new HashMap<>() {{
@@ -74,32 +74,26 @@ public class EnrollmentViewController {
     public void initialize() {
         // Configure table columns
         enrollmentIdColumn.setCellValueFactory(new PropertyValueFactory<>("enrollmentId"));
-        courseCodeColumn.setCellValueFactory(new PropertyValueFactory<>("courseCode"));
-        courseNameColumn.setCellValueFactory(new PropertyValueFactory<>("courseName"));
+        subjectCodeColumn.setCellValueFactory(new PropertyValueFactory<>("subjectCode"));
+        subjectNameColumn.setCellValueFactory(new PropertyValueFactory<>("subjectName"));
+        sectionColumn.setCellValueFactory(new PropertyValueFactory<>("section"));
         creditsColumn.setCellValueFactory(new PropertyValueFactory<>("credits"));
         semesterColumn.setCellValueFactory(new PropertyValueFactory<>("semester"));
-        yearColumn.setCellValueFactory(new PropertyValueFactory<>("enrollmentYear"));
+        yearColumn.setCellValueFactory(new PropertyValueFactory<>("year"));
         gradeColumn.setCellValueFactory(new PropertyValueFactory<>("grade"));
         
         enrollmentTable.setItems(enrollmentList);
         
-        // Add selection listener for enrollment table
-        enrollmentTable.getSelectionModel().selectedItemProperty().addListener(
-            (observable, oldValue, newValue) -> {
-                if (newValue != null) {
-                    populateFormWithEnrollment(newValue);
-                }
-            }
-        );
-        
-        // Populate semester dropdown
-        semesterComboBox.getItems().addAll("Semester 1", "Semester 2", "Summer");
+        // Populate semester dropdown (1-9)
+        semesterComboBox.getItems().addAll("Semester 1", "Semester 2", "Semester 3", 
+                                            "Semester 4", "Semester 5", "Semester 6",
+                                            "Semester 7", "Semester 8", "Semester 9");
         semesterComboBox.setValue("Semester 1");
         
         // Populate grade dropdown
         gradeComboBox.getItems().addAll("A+", "A", "A-", "B+", "B", "B-", 
-                                        "C+", "C", "C-", "D+", "D", "F", "N/A");
-        gradeComboBox.setValue("N/A");
+                                        "C+", "C", "C-", "D+", "D", "F", "Not Graded");
+        gradeComboBox.setValue("Not Graded");
         
         // Configure year spinner
         int currentYear = LocalDate.now().getYear();
@@ -112,7 +106,11 @@ public class EnrollmentViewController {
             @Override
             protected void updateItem(Student student, boolean empty) {
                 super.updateItem(student, empty);
-                setText(empty || student == null ? "" : student.getFullName() + " (" + student.getEmail() + ")");
+                if (empty || student == null) {
+                    setText("");
+                } else {
+                    setText(student.getStudentCode() + " - " + student.getFullName());
+                }
             }
         });
         
@@ -120,30 +118,44 @@ public class EnrollmentViewController {
             @Override
             protected void updateItem(Student student, boolean empty) {
                 super.updateItem(student, empty);
-                setText(empty || student == null ? "" : student.getFullName());
+                if (empty || student == null) {
+                    setText("");
+                } else {
+                    setText(student.getStudentCode() + " - " + student.getFullName());
+                }
             }
         });
         
-        // Configure course ComboBox display
-        courseComboBox.setCellFactory(lv -> new ListCell<Course>() {
+        // Configure subject ComboBox display
+        subjectComboBox.setCellFactory(lv -> new ListCell<Subject>() {
             @Override
-            protected void updateItem(Course course, boolean empty) {
-                super.updateItem(course, empty);
-                setText(empty || course == null ? "" : course.getCourseCode() + " - " + course.getCourseName());
+            protected void updateItem(Subject subject, boolean empty) {
+                super.updateItem(subject, empty);
+                if (empty || subject == null) {
+                    setText("");
+                } else {
+                    setText(subject.getSubjectCode() + "-" + subject.getSubjectSection() + 
+                           " - " + subject.getSubjectName() + " (" + subject.getCredits() + " credits)");
+                }
             }
         });
         
-        courseComboBox.setButtonCell(new ListCell<Course>() {
+        subjectComboBox.setButtonCell(new ListCell<Subject>() {
             @Override
-            protected void updateItem(Course course, boolean empty) {
-                super.updateItem(course, empty);
-                setText(empty || course == null ? "" : course.getCourseCode() + " - " + course.getCourseName());
+            protected void updateItem(Subject subject, boolean empty) {
+                super.updateItem(subject, empty);
+                if (empty || subject == null) {
+                    setText("");
+                } else {
+                    setText(subject.getSubjectCode() + "-" + subject.getSubjectSection() + 
+                           " (" + subject.getCredits() + " credits)");
+                }
             }
         });
         
         // Load initial data
         loadStudents();
-        loadCourses();
+        loadSubjects();
         
         updateStatusLabel("Ready - Select a student to begin");
     }
@@ -155,6 +167,7 @@ public class EnrollmentViewController {
             while (rs.next()) {
                 Student student = new Student(
                     rs.getInt("student_id"),
+                    rs.getString("student_code"),
                     rs.getString("full_name"),
                     rs.getString("email"),
                     rs.getString("phone"),
@@ -172,23 +185,24 @@ public class EnrollmentViewController {
         }
     }
     
-    private void loadCourses() {
-        courseList.clear();
+    private void loadSubjects() {
+        subjectList.clear();
         
-        try (ResultSet rs = DatabaseManager.getAllCourses()) {
+        try (ResultSet rs = DatabaseManager.getAllSubjects()) {
             while (rs.next()) {
-                Course course = new Course(
-                    rs.getInt("course_id"),
-                    rs.getString("course_code"),
-                    rs.getString("course_name"),
+                Subject subject = new Subject(
+                    rs.getInt("subject_id"),
+                    rs.getString("subject_code"),
+                    rs.getString("subject_name"),
+                    rs.getString("subject_section"),
                     rs.getInt("credits"),
                     rs.getString("description")
                 );
-                courseList.add(course);
+                subjectList.add(subject);
             }
-            courseComboBox.setItems(courseList);
+            subjectComboBox.setItems(subjectList);
         } catch (SQLException e) {
-            showError("Database Error", "Failed to load courses: " + e.getMessage());
+            showError("Database Error", "Failed to load subjects: " + e.getMessage());
         }
     }
     
@@ -198,9 +212,9 @@ public class EnrollmentViewController {
         
         if (selectedStudent != null) {
             loadStudentEnrollments(selectedStudent.getStudentId());
-            studentInfoLabel.setText("Student ID: " + selectedStudent.getStudentId() + 
-                                    " | Status: " + selectedStudent.getStatus());
-            updateStatusLabel("Loaded enrollments for " + selectedStudent.getFullName());
+            studentInfoLabel.setText("Student Code: " + selectedStudent.getStudentCode() + 
+                                    " | Email: " + selectedStudent.getEmail());
+            updateStatusLabel("Loaded assignments for " + selectedStudent.getFullName());
         }
     }
     
@@ -209,187 +223,158 @@ public class EnrollmentViewController {
         
         try (ResultSet rs = DatabaseManager.getStudentEnrollments(studentId)) {
             while (rs.next()) {
-                Enrollment enrollment = new Enrollment(
+                EnrollmentRecord record = new EnrollmentRecord(
                     rs.getInt("enrollment_id"),
-                    rs.getInt("student_id"),
-                    rs.getInt("course_id"),
-                    rs.getString("course_code"),
-                    rs.getString("course_name"),
+                    rs.getInt("subject_id"),
+                    rs.getString("subject_code"),
+                    rs.getString("subject_name"),
+                    rs.getString("subject_section"),
                     rs.getInt("credits"),
                     rs.getString("semester"),
                     rs.getInt("enrollment_year"),
-                    rs.getString("grade")
+                    rs.getString("grade") != null ? rs.getString("grade") : "Not Graded"
                 );
-                enrollmentList.add(enrollment);
+                enrollmentList.add(record);
             }
             
-            calculateAndDisplayGPA();
+            calculateAndDisplayCGPA();
             
         } catch (SQLException e) {
             showError("Database Error", "Failed to load enrollments: " + e.getMessage());
+            e.printStackTrace();
         }
-    }
-    
-    private void populateFormWithEnrollment(Enrollment enrollment) {
-        // Find and select the course
-        for (Course course : courseList) {
-            if (course.getCourseId() == enrollment.getCourseId()) {
-                courseComboBox.setValue(course);
-                break;
-            }
-        }
-        
-        semesterComboBox.setValue(enrollment.getSemester());
-        yearSpinner.getValueFactory().setValue(enrollment.getEnrollmentYear());
-        gradeComboBox.setValue(enrollment.getGrade());
     }
     
     @FXML
-    private void handleEnrollStudent() {
+    private void handleAssignSubject() {
         Student selectedStudent = studentComboBox.getValue();
-        Course selectedCourse = courseComboBox.getValue();
+        Subject selectedSubject = subjectComboBox.getValue();
         String semester = semesterComboBox.getValue();
         int year = yearSpinner.getValue();
-        String grade = gradeComboBox.getValue();
         
         if (selectedStudent == null) {
             showWarning("No Student Selected", "Please select a student first.");
             return;
         }
         
-        if (selectedCourse == null) {
-            showWarning("No Course Selected", "Please select a course to enroll.");
+        if (selectedSubject == null) {
+            showWarning("No Subject Selected", "Please select a subject to assign.");
             return;
         }
         
-        // Check if already enrolled
-        if (DatabaseManager.isStudentEnrolled(selectedStudent.getStudentId(), 
-                                             selectedCourse.getCourseId(), 
-                                             semester, year)) {
-            showWarning("Already Enrolled", 
-                       "Student is already enrolled in this course for the selected semester.");
+        // Check if already assigned
+        if (DatabaseManager.isStudentEnrolledInSubject(selectedStudent.getStudentId(), 
+                                                       selectedSubject.getSubjectId(), 
+                                                       semester, year)) {
+            showWarning("Already Assigned", 
+                       "Student is already assigned this subject for the selected semester.");
             return;
         }
         
-        int enrollmentId = DatabaseManager.enrollStudentInCourse(
+        int enrollmentId = DatabaseManager.enrollStudentInSubject(
             selectedStudent.getStudentId(),
-            selectedCourse.getCourseId(),
+            selectedSubject.getSubjectId(),
             semester,
             year
         );
         
         if (enrollmentId > 0) {
-            // If a grade was selected, update it immediately
-            if (grade != null && !grade.equals("N/A")) {
-                DatabaseManager.updateGrade(enrollmentId, grade);
-            }
-            
-            Enrollment newEnrollment = new Enrollment(
+            EnrollmentRecord newRecord = new EnrollmentRecord(
                 enrollmentId,
-                selectedStudent.getStudentId(),
-                selectedCourse.getCourseId(),
-                selectedCourse.getCourseCode(),
-                selectedCourse.getCourseName(),
-                selectedCourse.getCredits(),
+                selectedSubject.getSubjectId(),
+                selectedSubject.getSubjectCode(),
+                selectedSubject.getSubjectName(),
+                selectedSubject.getSubjectSection(),
+                selectedSubject.getCredits(),
                 semester,
                 year,
-                grade != null && !grade.equals("N/A") ? grade : "N/A"
+                "Not Graded"
             );
-            enrollmentList.add(newEnrollment);
+            enrollmentList.add(newRecord);
             
-            showSuccess("Success", "Student enrolled successfully!");
-            handleClearForm();
-            calculateAndDisplayGPA();
-            updateStatusLabel("Student enrolled in " + selectedCourse.getCourseCode());
+            showSuccess("Success", "Subject assigned successfully!");
+            calculateAndDisplayCGPA();
+            updateStatusLabel("Subject assigned to " + selectedStudent.getFullName());
         } else {
-            showError("Error", "Failed to enroll student.");
+            showError("Error", "Failed to assign subject.");
         }
     }
     
     @FXML
-    private void handleUpdateGrade() {
-        Enrollment selectedEnrollment = enrollmentTable.getSelectionModel().getSelectedItem();
+    private void handleRemoveAssignment() {
+        EnrollmentRecord selectedRecord = enrollmentTable.getSelectionModel().getSelectedItem();
         
-        if (selectedEnrollment == null) {
-            showWarning("No Selection", "Please select an enrollment to update grade.");
-            return;
-        }
-        
-        String newGrade = gradeComboBox.getValue();
-        
-        if (newGrade == null || newGrade.equals("N/A")) {
-            showWarning("Invalid Grade", "Please select a valid grade.");
-            return;
-        }
-        
-        boolean success = DatabaseManager.updateGrade(selectedEnrollment.getEnrollmentId(), newGrade);
-        
-        if (success) {
-            selectedEnrollment.setGrade(newGrade);
-            enrollmentTable.refresh();
-            calculateAndDisplayGPA();
-            
-            showSuccess("Success", "Grade updated successfully!");
-            updateStatusLabel("Grade updated for " + selectedEnrollment.getCourseCode());
-        } else {
-            showError("Error", "Failed to update grade.");
-        }
-    }
-    
-    @FXML
-    private void handleDropCourse() {
-        Enrollment selectedEnrollment = enrollmentTable.getSelectionModel().getSelectedItem();
-        
-        if (selectedEnrollment == null) {
-            showWarning("No Selection", "Please select a course enrollment to drop.");
+        if (selectedRecord == null) {
+            showWarning("No Selection", "Please select a subject assignment to remove.");
             return;
         }
         
         Alert confirmAlert = new Alert(Alert.AlertType.CONFIRMATION);
-        confirmAlert.setTitle("Confirm Drop");
-        confirmAlert.setHeaderText("Drop Course");
-        confirmAlert.setContentText("Are you sure you want to drop " + 
-                                   selectedEnrollment.getCourseCode() + "?");
+        confirmAlert.setTitle("Confirm Removal");
+        confirmAlert.setHeaderText("Remove Subject Assignment");
+        confirmAlert.setContentText("Are you sure you want to remove " + 
+                                   selectedRecord.getSubjectCode() + " from this student?");
         
         confirmAlert.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
-                boolean success = DatabaseManager.deleteEnrollment(selectedEnrollment.getEnrollmentId());
+                boolean success = DatabaseManager.deleteEnrollment(selectedRecord.getEnrollmentId());
                 
                 if (success) {
-                    enrollmentList.remove(selectedEnrollment);
-                    showSuccess("Success", "Course dropped successfully!");
-                    handleClearForm();
-                    calculateAndDisplayGPA();
-                    updateStatusLabel("Course dropped");
+                    enrollmentList.remove(selectedRecord);
+                    showSuccess("Success", "Subject assignment removed!");
+                    calculateAndDisplayCGPA();
+                    updateStatusLabel("Assignment removed");
                 } else {
-                    showError("Error", "Failed to drop course.");
+                    showError("Error", "Failed to remove assignment.");
                 }
             }
         });
     }
     
     @FXML
-    private void handleClearForm() {
-        courseComboBox.setValue(null);
-        semesterComboBox.setValue("Semester 1");
-        gradeComboBox.setValue("N/A");
-        yearSpinner.getValueFactory().setValue(LocalDate.now().getYear());
-        enrollmentTable.getSelectionModel().clearSelection();
+    private void handleUpdateGrade() {
+        EnrollmentRecord selectedRecord = enrollmentTable.getSelectionModel().getSelectedItem();
+        
+        if (selectedRecord == null) {
+            showWarning("No Selection", "Please select a subject assignment to grade.");
+            return;
+        }
+        
+        String newGrade = gradeComboBox.getValue();
+        
+        if (newGrade == null || newGrade.equals("Not Graded")) {
+            // Allow setting to "Not Graded" to remove grade
+            newGrade = null;
+        }
+        
+        boolean success = DatabaseManager.updateGrade(selectedRecord.getEnrollmentId(), newGrade);
+        
+        if (success) {
+            selectedRecord.setGrade(newGrade != null ? newGrade : "Not Graded");
+            enrollmentTable.refresh();
+            calculateAndDisplayCGPA();
+            
+            showSuccess("Success", "Grade updated successfully!");
+            updateStatusLabel("Grade updated for " + selectedRecord.getSubjectCode());
+        } else {
+            showError("Error", "Failed to update grade.");
+        }
     }
     
     @FXML
-    private void handleManageCourses() {
+    private void handleManageSubjects() {
         try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("CourseView.fxml"));
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("SubjectView.fxml"));
             Parent root = loader.load();
             
             Scene scene = new Scene(root, 1200, 700);
             Stage stage = (Stage) enrollmentTable.getScene().getWindow();
             stage.setScene(scene);
-            stage.setTitle("Course Management");
+            stage.setTitle("Subject Management");
             
         } catch (IOException e) {
-            showError("Navigation Error", "Failed to load course view: " + e.getMessage());
+            showError("Navigation Error", "Failed to load subject view: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
@@ -399,30 +384,33 @@ public class EnrollmentViewController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("StudentView.fxml"));
             Parent root = loader.load();
             
-            Scene scene = new Scene(root, 1200, 700);
+            Scene scene = new Scene(root, 1200, 780);
             Stage stage = (Stage) enrollmentTable.getScene().getWindow();
             stage.setScene(scene);
             stage.setTitle("Student Management System");
             
         } catch (IOException e) {
             showError("Navigation Error", "Failed to load student view: " + e.getMessage());
+            e.printStackTrace();
         }
     }
     
     /**
-     * Calculates and displays GPA for the selected student
+     * Calculates and displays CGPA for the selected student
+     * CGPA = Total Grade Points / Total Graded Credits
      */
-    private void calculateAndDisplayGPA() {
+    private void calculateAndDisplayCGPA() {
         double totalPoints = 0.0;
         int totalCredits = 0;
         int gradedCredits = 0;
         
-        for (Enrollment enrollment : enrollmentList) {
-            String grade = enrollment.getGrade();
-            int credits = enrollment.getCredits();
+        for (EnrollmentRecord record : enrollmentList) {
+            String grade = record.getGrade();
+            int credits = record.getCredits();
             
             totalCredits += credits;
             
+            // Only count grades that have been assigned
             if (gradePoints.containsKey(grade)) {
                 totalPoints += gradePoints.get(grade) * credits;
                 gradedCredits += credits;
@@ -430,13 +418,14 @@ public class EnrollmentViewController {
         }
         
         if (gradedCredits > 0) {
-            double gpa = totalPoints / gradedCredits;
-            gpaLabel.setText(String.format("GPA: %.2f", gpa));
+            double cgpa = totalPoints / gradedCredits;
+            cgpaLabel.setText(String.format("CGPA: %.2f", cgpa));
         } else {
-            gpaLabel.setText("GPA: N/A");
+            cgpaLabel.setText("CGPA: N/A");
         }
         
-        totalCreditsLabel.setText("Total Credits: " + totalCredits);
+        totalCreditsLabel.setText("Total Credits: " + totalCredits + 
+                                 " (Graded: " + gradedCredits + ")");
     }
     
     private void updateStatusLabel(String message) {
@@ -465,5 +454,45 @@ public class EnrollmentViewController {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+    
+    /**
+     * Inner class to represent an enrollment record for table display
+     */
+    public static class EnrollmentRecord {
+        private final int enrollmentId;
+        private final int subjectId;
+        private final String subjectCode;
+        private final String subjectName;
+        private final String section;
+        private final int credits;
+        private final String semester;
+        private final int year;
+        private String grade;
+        
+        public EnrollmentRecord(int enrollmentId, int subjectId, String subjectCode, 
+                               String subjectName, String section, int credits,
+                               String semester, int year, String grade) {
+            this.enrollmentId = enrollmentId;
+            this.subjectId = subjectId;
+            this.subjectCode = subjectCode;
+            this.subjectName = subjectName;
+            this.section = section;
+            this.credits = credits;
+            this.semester = semester;
+            this.year = year;
+            this.grade = grade;
+        }
+        
+        public int getEnrollmentId() { return enrollmentId; }
+        public int getSubjectId() { return subjectId; }
+        public String getSubjectCode() { return subjectCode; }
+        public String getSubjectName() { return subjectName; }
+        public String getSection() { return section; }
+        public int getCredits() { return credits; }
+        public String getSemester() { return semester; }
+        public int getYear() { return year; }
+        public String getGrade() { return grade; }
+        public void setGrade(String grade) { this.grade = grade; }
     }
 }

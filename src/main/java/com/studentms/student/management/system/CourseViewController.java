@@ -209,7 +209,7 @@ public class CourseViewController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("StudentView.fxml"));
             Parent root = loader.load();
             
-            Scene scene = new Scene(root, 1200, 700);
+            Scene scene = new Scene(root, 1200, 780);
             Stage stage = (Stage) courseTable.getScene().getWindow();
             stage.setScene(scene);
             stage.setTitle("Student Management System");

@@ -15,6 +15,7 @@ public class Student {
     
     // IntegerProperty for numeric ID
     private final IntegerProperty studentId;
+    private final StringProperty studentCode;
     
     // StringProperty for text fields - these automatically notify JavaFX when changed
     private final StringProperty fullName;
@@ -30,11 +31,12 @@ public class Student {
      * Constructor for creating a complete Student object with all fields
      * This is used when loading existing students from the database
      */
-    public Student(int studentId, String fullName, String email, String phone,
+    public Student(int studentId, String studentCode, String fullName, String email, String phone,
                    String dateOfBirth, String gender, String address,
                    String enrollmentDate, String status) {
         
         this.studentId = new SimpleIntegerProperty(studentId);
+        this.studentCode = new SimpleStringProperty(studentCode);
         this.fullName = new SimpleStringProperty(fullName);
         this.email = new SimpleStringProperty(email);
         this.phone = new SimpleStringProperty(phone);
@@ -49,11 +51,12 @@ public class Student {
      * Constructor for creating a new student (without ID)
      * The ID will be assigned by the database when inserted
      */
-    public Student(String fullName, String email, String phone,
+    public Student(String studentCode, String fullName, String email, String phone,
                    String dateOfBirth, String gender, String address,
                    String enrollmentDate) {
         
         this.studentId = new SimpleIntegerProperty(0); // Temporary, will be set after DB insert
+        this.studentCode = new SimpleStringProperty(studentCode);
         this.fullName = new SimpleStringProperty(fullName);
         this.email = new SimpleStringProperty(email);
         this.phone = new SimpleStringProperty(phone);
@@ -69,6 +72,10 @@ public class Student {
     
     public IntegerProperty studentIdProperty() {
         return studentId;
+    }
+    
+    public StringProperty studentCodeProperty() {
+        return studentCode;
     }
     
     public StringProperty fullNameProperty() {
@@ -109,6 +116,10 @@ public class Student {
     public int getStudentId() {
         return studentId.get();
     }
+
+    public String getStudentCode() {
+        return studentCode.get();
+    }
     
     public String getFullName() {
         return fullName.get();
@@ -147,6 +158,10 @@ public class Student {
     
     public void setStudentId(int studentId) {
         this.studentId.set(studentId);
+    }
+    
+    public void setStudentCode(String studentCode) {
+        this.studentCode.set(studentCode);
     }
     
     public void setFullName(String fullName) {

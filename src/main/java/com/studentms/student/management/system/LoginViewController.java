@@ -11,6 +11,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
 import java.io.IOException;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 /**
  * Controller for the Login screen
@@ -34,7 +36,7 @@ public class LoginViewController {
     @FXML
     public void initialize() {
         // Populate role dropdown
-        roleComboBox.getItems().addAll("Student Record Administrator", "Lecturer", "Student");
+        roleComboBox.getItems().addAll("Student Record Administrator", "Coordinator", "Student");
         roleComboBox.setValue("Student Record Administrator"); // Default selection
         
         // Clear any previous error messages
@@ -101,10 +103,16 @@ public class LoginViewController {
         
         if (role.equals("Student Record Administrator")) {
             return username.equals("admin") && password.equals("admin123");
-        } else if (role.equals("Lecturer")) {
-            return username.equals("lecturer") && password.equals("lecturer123");
+        } else if (role.equals("Coordinator")) {
+            return username.equals("coordinator") && password.equals("coord123");
         } else if (role.equals("Student")) {
-            return username.equals("student") && password.equals("student123");
+            // For students, username is email and password is student code
+            try (ResultSet rs = DatabaseManager.authenticateStudent(username, password)) {
+                return rs.next(); // Returns true if student found
+            } catch (SQLException e) {
+                System.err.println("Error authenticating student: " + e.getMessage());
+                return false;
+            }
         }
         
         return false;
@@ -115,24 +123,39 @@ public class LoginViewController {
      */
     private void openMainWindow() {
         try {
-            // Load the main student management view
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("StudentView.fxml"));
-            Parent root = loader.load();
-            
-            // Create new scene
-            Scene scene = new Scene(root, 1200, 700);
-            
-            // Get the current stage
-            Stage stage = (Stage) loginButton.getScene().getWindow();
-            
-            // Set the new scene
-            stage.setScene(scene);
-            stage.setTitle("Student Management System - " + currentUser.getRole());
-            stage.centerOnScreen();
-            
-            // Apply role-based permissions
-            StudentViewController controller = loader.getController();
-            controller.setUserSession(currentUser);
+            // For students, open a different view
+            if (currentUser.isStudent()) {
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("StudentPortalView.fxml"));
+                Parent root = loader.load();
+                
+                Scene scene = new Scene(root); // No fixed size
+                Stage stage = (Stage) loginButton.getScene().getWindow();
+
+                stage.setScene(scene);
+                stage.setTitle("Student Portal - " + currentUser.getUsername());
+
+                stage.setResizable(true);
+                stage.setMaximized(true);
+
+                // Pass user session to student portal
+                StudentPortalViewController controller = loader.getController();
+                controller.setUserSession(currentUser);
+                
+            } else {
+                // Load the main student management view for admin/coordinator
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("StudentView.fxml"));
+                Parent root = loader.load();
+                
+                Scene scene = new Scene(root, 1200, 780);
+                Stage stage = (Stage) loginButton.getScene().getWindow();
+                stage.setScene(scene);
+                stage.setTitle("Student Management System - " + currentUser.getRole());
+                stage.centerOnScreen();
+                
+                // Apply role-based permissions
+                StudentViewController controller = loader.getController();
+                controller.setUserSession(currentUser);
+            }
             
         } catch (IOException e) {
             showError("Error loading main window: " + e.getMessage());
@@ -178,8 +201,8 @@ public class LoginViewController {
             return "Student Record Administrator".equals(role);
         }
         
-        public boolean isLecturer() {
-            return "Lecturer".equals(role);
+        public boolean isCoordinator() {
+            return "Coordinator".equals(role);
         }
         
         public boolean isStudent() {
