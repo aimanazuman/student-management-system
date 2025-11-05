@@ -306,8 +306,8 @@ This project demonstrates:
 
 **Course**: Advance Application Development  
 **Course Code**: SWC4243/SWC4453  
-**Institution**: [Your University Name]  
-**Semester**: [Academic Year/Semester]  
+**Institution**: Universiti Poly Tech Malaysia (UPTM)  
+**Semester**: Semester 7  
 **Lecturer**: Pn. Wan Nor Asnida binti Wan Jusoh
 
 ### Project Requirements Fulfilled
@@ -323,9 +323,9 @@ This project demonstrates:
 
 ## 👥 Developer
 
-**Name**: XXXXXX  
-**Student ID**: XXXXXX  
-**Email**: [your.email@university.edu]  
+**Name**: Aiman Azman  
+**Student ID**: [REDACTED]  
+**Email**: [contact.aiman.azman@gmail.com](contact.aiman.azman@gmail.com)
 **GitHub**: [github.com/aimanazuman](https://github.com/aimanazuman)
 
 ### Responsibilities
@@ -408,9 +408,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Solution**: Check write permissions in application folder, close open reports
 
 ### Getting Help
-1. Check the [User Manual](USER_MANUAL.md) for detailed instructions
+1. Check the [User Manual](USER_MANUAL.md) for detailed instructions (Not available yet)
 2. Review [Issues](https://github.com/aimanazuman/student-management-system/issues) on GitHub
-3. Contact developer: [your.email@university.edu]
+3. Contact developer: [contact.aiman.azman@gmail.com](contact.aiman.azman@gmail.com)
 4. Review console output for detailed error messages
 
 ## 📖 Documentation
